@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Out of the Hat</title>
+<meta name="description" content="For fifty years Eurovision drew its running order by lot. In those finals, a song drawn into the last third of the night finished about one and a half places higher than one drawn into the first. The curse of slot two is what chance leaves somewhere.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------------ *
+ * A scoreboard after the interval act: stage navy, lottery-ball      *
+ * numerals, and one gold that only ever means "drawn late". Slate is *
+ * drawn early. Grey bands are what chance alone produces.             *
+ * ------------------------------------------------------------------ */
+:root{
+  --ground:#f6f4ef; --panel:#ffffff; --sunk:#ece9e1;
+  --ink:#14162a; --ink2:#4a4d63; --ink3:#81849a; --rule:#d5d3cb; --rule2:#e7e5de;
+  --late:#b7790a; --late-soft:#f3e2bd; --early:#3f5a8a; --early-soft:#d9e1ef;
+  --band:rgba(20,22,42,.10); --warn:#b4321f; --ok:#2f7d4f;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ground:#0d0f1f; --panel:#151833; --sunk:#10122a;
+  --ink:#eceaf6; --ink2:#b3b4cc; --ink3:#7f81a0; --rule:#2c2f55; --rule2:#22254a;
+  --late:#f2b33d; --late-soft:#4a3b17; --early:#8fa8dc; --early-soft:#25304f;
+  --band:rgba(236,234,246,.10); --warn:#f0806b; --ok:#6cc792;
+}}
+:root[data-theme="dark"]{
+  --ground:#0d0f1f; --panel:#151833; --sunk:#10122a;
+  --ink:#eceaf6; --ink2:#b3b4cc; --ink3:#7f81a0; --rule:#2c2f55; --rule2:#22254a;
+  --late:#f2b33d; --late-soft:#4a3b17; --early:#8fa8dc; --early-soft:#25304f;
+  --band:rgba(236,234,246,.10); --warn:#f0806b; --ok:#6cc792;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);font:16px/1.6 Barlow,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+@media(min-width:700px){.wrap{padding:0 28px}}
+h1,h2,h3{font-family:"Barlow Condensed",sans-serif;letter-spacing:-.01em;line-height:1.02;margin:0}
+.mono,code{font-family:"JetBrains Mono",monospace}
+a{color:inherit;text-decoration-color:var(--ink3);text-underline-offset:3px}
+.k{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
+section{margin-top:64px}
+section h2{font-size:clamp(30px,4.2vw,46px);font-weight:800;text-transform:uppercase}
+.lede{font-size:18px;color:var(--ink2);max-width:64ch;margin:12px 0 0}
+p{max-width:68ch}
+.late{color:var(--late);font-weight:600} .early{color:var(--early);font-weight:600}
+
+/* hero */
+header{padding:46px 0 10px}
+.balls{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px}
+.ball{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 13px "JetBrains Mono",monospace;
+  background:var(--panel);border:1.5px solid var(--rule);color:var(--ink2);transition:transform .25s}
+.ball.l{border-color:var(--late);color:var(--late)} .ball.e{border-color:var(--early);color:var(--early)}
+h1{font-size:clamp(54px,10vw,112px);font-weight:800;text-transform:uppercase}
+.finding{font-family:"Barlow Condensed",sans-serif;font-size:clamp(23px,3.1vw,34px);line-height:1.18;font-weight:600;max-width:30ch;margin:16px 0 0}
+.finding b{color:var(--late)}
+.dek{color:var(--ink2);max-width:62ch;margin-top:16px}
+
+/* numbers row */
+.nums{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:30px}
+@media(min-width:820px){.nums{grid-template-columns:repeat(4,1fr)}}
+.nums>div{background:var(--panel);padding:16px 18px}
+.nums .v{font:800 34px/1 "Barlow Condensed",sans-serif}
+.nums .d{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.4}
+
+/* charts */
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:18px 18px 14px;margin-top:22px}
+.card h3{font-size:24px;font-weight:700}
+.card .sub{font-size:14px;color:var(--ink2);margin:4px 0 0}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:"JetBrains Mono",monospace;font-size:11px;fill:var(--ink3)}
+.tip{min-height:1.6em;font:12.5px "JetBrains Mono",monospace;color:var(--ink2);margin-top:8px}
+.two{display:grid;gap:22px;grid-template-columns:1fr}
+@media(min-width:900px){.two{grid-template-columns:1fr 1fr}}
+.two .card{margin-top:0}
+.verdict{font:600 13px "JetBrains Mono",monospace;margin-top:10px;padding:8px 10px;border-radius:3px;background:var(--sunk)}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--warn)}
+
+/* controls */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.chip{font:500 13px "JetBrains Mono",monospace;padding:6px 11px;border-radius:999px;border:1px solid var(--rule);
+  background:var(--panel);color:var(--ink2);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.chip:focus-visible,button:focus-visible{outline:2px solid var(--late);outline-offset:2px}
+button.run{font:600 13px "JetBrains Mono",monospace;padding:8px 14px;border-radius:3px;border:1px solid var(--late);
+  background:transparent;color:var(--late);cursor:pointer}
+button.run:disabled{opacity:.5;cursor:wait}
+label.tog{font-size:14px;color:var(--ink2);display:inline-flex;gap:8px;align-items:center;margin-top:12px}
+
+/* timeline */
+.tl{display:grid;gap:0;margin-top:22px;border-left:2px solid var(--rule)}
+.tl>div{padding:4px 0 16px 18px;position:relative}
+.tl>div::before{content:"";position:absolute;left:-7px;top:10px;width:12px;height:12px;border-radius:50%;background:var(--ground);border:2px solid var(--ink3)}
+.tl>div.on::before{border-color:var(--late);background:var(--late)}
+.tl .y{font:700 15px "JetBrains Mono",monospace}
+.tl p{margin:2px 0 0;color:var(--ink2);font-size:15px}
+
+/* table */
+.scroller{overflow-x:auto;margin-top:14px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--rule2);vertical-align:top}
+th{font:400 11px "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+td.n{font-family:"JetBrains Mono",monospace;text-align:right;white-space:nowrap}
+
+/* methods */
+.methods{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:22px 20px;margin-top:22px}
+.methods h3{font-size:22px;font-weight:700;margin-top:26px}
+.methods h3:first-child{margin-top:0}
+.methods li{margin-bottom:8px;color:var(--ink2);max-width:76ch}
+.methods li b{color:var(--ink)}
+footer{margin:70px 0 50px;color:var(--ink3);font-size:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<!-- catalog-link -->
+<style>
+.qp-crumb{display:flex;align-items:center;gap:8px;padding:9px 18px;
+  border-bottom:1px solid rgba(128,128,128,.26);background:rgba(128,128,128,.06);
+  font:500 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+.qp-crumb a{color:inherit;text-decoration:none;opacity:.68;display:inline-flex;gap:7px;align-items:center}
+.qp-crumb a:hover,.qp-crumb a:focus-visible{opacity:1;text-decoration:underline;text-underline-offset:3px}
+.qp-crumb .qp-sep{opacity:.34}
+.qp-crumb .qp-here{opacity:.44;text-transform:uppercase}
+.qp-crumb .qp-visits{margin-left:auto;opacity:.44;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.qp-crumb{padding:8px 14px;font-size:11px}}
+@media print{.qp-crumb{display:none}}
+</style>
+<nav class="qp-crumb" aria-label="Breadcrumb">
+  <a href="https://tnriley.github.io/quick-projects/">&larr;&nbsp;Quick Projects</a>
+  <span class="qp-sep">/</span>
+  <span class="qp-here">Project</span>
+</nav>
+<script>
+(function(){
+  var nav = document.querySelector(".qp-crumb"); if (!nav) return;
+  var live = /\.github\.io$/i.test(location.hostname);
+  fetch("https://abacus.jasoncameron.dev/" + (live ? "hit" : "get") + "/tnriley-shelf-e76198/out-of-the-hat", {cache: "no-store"})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d || typeof d.value !== "number") return;
+      var s = document.createElement("span");
+      s.className = "qp-visits";
+      s.textContent = d.value.toLocaleString("en-US") + (d.value === 1 ? " visit" : " visits");
+      nav.appendChild(s);
+    })
+    .catch(function(){});
+})();
+</script>
+<!-- /catalog-link -->
+<div class="wrap">
+
+<header>
+  <div class="balls" id="balls" aria-hidden="true"></div>
+  <h1>Out of the Hat</h1>
+  <p class="finding" id="finding">For fifty years Eurovision drew its running order by lot. In those finals, a song drawn into the <b>last third</b> of the night finished about <b id="fPlaces">one and a half</b> places higher than one drawn into the first.</p>
+  <p class="dek">A lottery is an experiment nobody had to design: no producer chose who went late, so if late songs did better, it was the slot and not the song. Every figure below is recalculated in your browser from <span id="nRows">2,148</span> entries in <span id="nShows">107</span> shows, 1957 to 2025, extracted from each contest's own Wikipedia article. And the famous curse of slot two? That is what chance leaves somewhere, and slot sixteen has never won either.</p>
+  <div class="nums" id="nums"></div>
+</header>
+
+<section id="slots">
+  <h2>Slot by slot</h2>
+  <p class="lede">Every final whose order was drawn by lot, 1957 to 2006. Each bar is where songs from that tenth of the running order finished, as a share of the way down the scoreboard: lower is better. The grey band is the middle 95% of what the same finals produce when the slots are shuffled at random, two thousand times.</p>
+  <div class="card">
+    <div class="chips" role="group" aria-label="Which finals" id="eraChips">
+      <button class="chip" data-era="0" aria-pressed="true">Drawn by lot · 1957–2006</button>
+      <button class="chip" data-era="1" aria-pressed="false">Lot with exceptions · 2007–12</button>
+      <button class="chip" data-era="2" aria-pressed="false">Set by producers · 2013–25</button>
+    </div>
+    <label class="tog"><input type="checkbox" id="incChose"> include the countries that chose their own slot (2007, 2008)</label>
+    <svg id="deciles" viewBox="0 0 960 330" role="img" aria-label="Mean finishing position by tenth of the running order"></svg>
+    <div class="tip" id="decTip">Hover a bar.</div>
+    <div class="verdict" id="decVerdict">computing…</div>
+  </div>
+</section>
+
+<section id="measures">
+  <h2>Two measures, never averaged</h2>
+  <p class="lede">A finishing place and a qualification are different events: different nights, different songs, different voters. If running order matters, both should show it. They are kept apart on purpose, so that if one moved and the other did not, you would see it.</p>
+  <div class="two">
+    <div class="card">
+      <div class="k">Measure A · finals drawn by lot</div>
+      <h3>Where they finished</h3>
+      <p class="sub">Mean place, by third of the running order, 1957–2006. Taller is a better place.</p>
+      <svg id="thirdsA" viewBox="0 0 440 220" role="img" aria-label="Mean finishing place by third of the running order"></svg>
+      <div class="verdict" id="vA">computing…</div>
+    </div>
+    <div class="card">
+      <div class="k">Measure B · semi-finals drawn by lot</div>
+      <h3>Who got through</h3>
+      <p class="sub">Share that qualified for the final, by third, 2004–2012, choosers removed.</p>
+      <svg id="thirdsB" viewBox="0 0 440 220" role="img" aria-label="Qualification rate by third of the running order"></svg>
+      <div class="verdict" id="vB">computing…</div>
+    </div>
+  </div>
+</section>
+
+<section id="control">
+  <h2>The control</h2>
+  <p class="lede">If the hat really was a hat, a country's slot should know nothing about how good that country was before the draw. So the same test is run on something the running order cannot have caused: each country's average finish over its previous five finals. If that leans the way the result leans, the draw was not clean, and the headline above would not stand.</p>
+  <div class="card">
+    <svg id="ctrl" viewBox="0 0 960 170" role="img" aria-label="Correlation of slot with the outcome and with prior strength, against the chance band"></svg>
+    <div class="verdict" id="vC">computing…</div>
+    <p class="sub" id="adjNote"></p>
+  </div>
+</section>
+
+<section id="curse">
+  <h2>The curse of slot two</h2>
+  <p class="lede">No song performed second has won Eurovision. It is repeated every May. Here are the winners of all <span id="nFinals">68</span> finals by slot, under every running-order regime, with ties counted for each winner.</p>
+  <div class="card">
+    <svg id="wins" viewBox="0 0 960 250" role="img" aria-label="Number of winners by running-order slot"></svg>
+    <div class="tip" id="winTip">Hover a slot.</div>
+  </div>
+  <div class="card">
+    <div class="k">Rerun history</div>
+    <h3>If the winner were drawn out of the hat too</h3>
+    <p class="sub">Each run replays all the finals with the same field sizes, giving every song the same chance of winning, then checks the slots that have been used in at least 40 finals.</p>
+    <p style="margin-top:14px"><button class="run" id="mcRun">Rerun 10,000 histories</button></p>
+    <div class="nums" id="mcNums" style="margin-top:16px"></div>
+    <p class="sub" id="mcNote" style="margin-top:12px"></p>
+  </div>
+</section>
+
+<section id="instrument">
+  <h2>The hat kept changing</h2>
+  <p class="lede">The result depends entirely on knowing which years were a lottery, and the rule was not constant. These are the regimes, as each contest's own article describes its draw. Getting this wrong would quietly mix producer decisions into an experiment.</p>
+  <div class="tl" id="tl">
+    <div class="on"><div class="y">1956</div><p>Seven countries, two songs each. Only the winner was ever announced, so there are no places to measure. Left out.</p></div>
+    <div class="on"><div class="y">1957–2006</div><p>The running order is drawn by lot, typically months ahead (in 1961 a six-year-old and a four-year-old helped). Countries that withdraw after the draw leave a gap the remaining entries close up around.</p></div>
+    <div class="on"><div class="y">1996</div><p>An audio-only qualifying round: juries heard 29 songs on tape, in a drawn order, and 22 went through. No stage at all.</p></div>
+    <div><div class="y">2007</div><p>Five semi-final countries and three finalists win the right to <b>choose</b> their slot. <span class="late">All eight pick the second half of the show.</span> The people with the most at stake believed the folk wisdom.</p></div>
+    <div><div class="y">2008</div><p>Again some countries are drawn to pick their own position: three in each semi-final, and Serbia, the host, in the final.</p></div>
+    <div><div class="y">2009–2012</div><p>The articles describe a running-order draw and say nothing about choosers either way. Kept with 2007–08 as "lot with exceptions", out of the headline.</p></div>
+    <div><div class="y">2013–</div><p>Countries draw only which half they perform in; the show's producers set the exact order. No longer an experiment.</p></div>
+  </div>
+  <div class="card">
+    <div class="k">The same test, regime by regime</div>
+    <div class="scroller"><table id="eraTable"></table></div>
+  </div>
+</section>
+
+<section id="methods">
+  <h2>Methods</h2>
+  <div class="methods">
+    <h3>Sources</h3>
+    <ul>
+      <li><b>English Wikipedia, "Eurovision Song Contest 1957" to "Eurovision Song Contest 2025"</b>: 69 articles read through the MediaWiki parse API on 2026-10-07. Every result table (running order, country, points, place) and each article's account of how the running order was set. Text and tables are licensed <b>CC BY-SA 4.0</b>; the exact revision of each article is recorded in the repository, so the numbers here can be checked against what was read. The derived data on this page is shared under the same licence.</li>
+      <li>No other data. The original plan was to use a widely shared Eurovision dataset on GitHub; it carries no licence and was scraped from a fan site, so it was set aside and the tables were rebuilt from the articles instead.</li>
+    </ul>
+    <h3>What was measured, and how</h3>
+    <ul>
+      <li><b>Slot</b> is the entry's rank in the show's running order, so a country that withdrew after the draw does not leave a hole. The Netherlands in 2024 was disqualified before the final and holds no slot. Position within the night is slot minus one over field size minus one: 0 for the opener, 1 for the closer.</li>
+      <li><b>Measure A</b> is the finishing place as a share of the way down the scoreboard, (place − 1) / (field − 1), so a field of 16 and a field of 26 sit on the same scale. Ties keep the place the article gives them (1969 had four winners).</li>
+      <li><b>Measure B</b> is whether a semi-final entry reached that year's final. It is derived from the final's own table, not from row colouring, and every semi-final checks out at exactly ten qualifiers.</li>
+      <li><b>Significance</b> is a permutation test: slots are shuffled within each show, 2,000 times, and the observed correlation is compared with that spread. Shuffling within a show keeps every year's field size and scoring system intact.</li>
+      <li><b>The control</b> is each country's mean Measure A over its previous five finals (at least two needed), correlated with its slot in the same way. Its verdict is computed live: if it ever falls outside its own chance band, the headline figure is replaced by a warning.</li>
+      <li><b>The places figure</b> in the headline is the gap in mean (place − 1) / (field − 1) between the first and last thirds, multiplied by the median field size minus one.</li>
+      <li><b>Parse checks</b>: in every one of the 107 tables, more points never comes with a worse place, and every semi-final yields ten qualifiers. Both checks are in <code>src/shape.py</code> and stop the build if they fail.</li>
+    </ul>
+    <h3>What this does not say</h3>
+    <ul id="limits">
+      <li><b>Not why.</b> Juries tiring, televoters remembering the last few songs, the long tail of early slots being used for warm-up acts: the lottery says the slot matters, not which of these is the reason.</li>
+      <li><b>Nothing causal about producer years.</b> Since 2013 producers place the songs, and they have said they do it to pace the show. The 2013–25 numbers are shown for comparison only; a song placed late by a producer may simply be a song the producer rated.</li>
+      <li><b>Not about any one song.</b> The effect is about one and a half places on average, against a spread of the whole scoreboard. Plenty of openers have won: three in the lottery years.</li>
+      <li><b>Not a ruling on slot two.</b> Slot two has no winners, and that is unremarkable in aggregate. It does not show slot two is fine either; with this few finals, no single slot's record can show much.</li>
+      <li><b>Not the whole scoring history.</b> Juries, televotes and points scales changed many times. Working in shares of the field keeps years comparable, but it does not make a 1965 jury and a 2005 televote the same instrument.</li>
+      <li><b>Wikipedia is the only source.</b> The tables are well kept and pass both parse checks, but an error in an article is an error here. Each figure can be traced to a dated revision.</li>
+    </ul>
+    <h3>What did not work</h3>
+    <ul>
+      <li><b>2009–2012 could not be classified.</b> 2007 and 2008 name the countries that chose their slots, so they can be removed. For 2009–12 the articles describe a draw and are silent on whether anyone chose. Rather than guess, those years sit in their own regime and stay out of the headline. Including them makes the effect larger, not smaller, which is a reason for caution and not for comfort.</li>
+      <li><b>The no-stage control is too small to use.</b> The 1996 qualifying round was judged from tapes in a drawn order, which should separate "being heard late" from "being seen late". It has 29 songs. <span id="audioNote">Its result is shown here for completeness</span>, but a single round cannot tell those apart, and it is not used for anything.</li>
+      <li><b>The 2007 choosers are evidence, but not data.</b> Eight countries choosing the second half shows what delegations believed. It cannot be tested, because the countries chose; those eight entries are excluded from every test unless you switch them back in above.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  Data: English Wikipedia contest articles, CC BY-SA 4.0. Code: MIT. Rebuild instructions, the extraction pipeline and expected values are in the repository.
+</footer>
+</div>
+
+<script>
+const DATA = {"rows":2148,"countries":["Albania","Andorra","Armenia","Australia","Austria","Azerbaijan","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Georgia","Germany","Greece","Hungary","Iceland","Ireland","Israel","Italy","Latvia","Lithuania","Luxembourg","Macedonia","Malta","Moldova","Monaco","Montenegro","Morocco","Netherlands","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Serbia and Montenegro","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey","Ukraine","United Kingdom","Yugoslavia"],"shows":["final","sf","sf1","sf2","prequal"],"revids":{"1957":1372386825,"1958":1366551627,"1959":1366552426,"1960":1366568757,"1961":1366568800,"1962":1367177725,"1963":1366569688,"1964":1376146580,"1965":1368425747,"1966":1367273899,"1967":1370478274,"1968":1377249141,"1969":1370221038,"1970":1378830410,"1971":1368428732,"1972":1378805608,"1973":1377516334,"1974":1368426129,"1975":1370649072,"1976":1370489374,"1977":1375481874,"1978":1378830459,"1979":1366582610,"1980":1370845374,"1981":1371645215,"1982":1370489332,"1983":1376719013,"1984":1378994406,"1985":1366585911,"1986":1373273795,"1987":1377453615,"1988":1373273253,"1989":1373402443,"1990":1370186661,"1991":1374406130,"1992":1370184088,"1993":1368426730,"1994":1374124324,"1995":1365718863,"1996":1370234546,"1997":1370565925,"1998":1369094361,"1999":1365718916,"2000":1378389162,"2001":1370565867,"2002":1375242296,"2003":1370565804,"2004":1373715776,"2005":1373062731,"2006":1373062025,"2007":1373061404,"2008":1373043938,"2009":1373064713,"2010":1373069232,"2011":1373202743,"2012":1378877301,"2013":1373205184,"2014":1367375806,"2015":1373206790,"2016":1373207137,"2017":1374456829,"2018":1378844074,"2019":1374457583,"2021":1374457917,"2022":1373041187,"2023":1375641667,"2024":1378446121,"2025":1378018909},"dropped":[[2024,"final","Netherlands"]],"cols":{"year":"pQelB6UHpQelB6UHpQelB6UHpQemB6YHpgemB6YHpgemB6YHpgemB6cHpwenB6cHpwenB6cHpwenB6cHpweoB6gHqAeoB6gHqAeoB6gHqAeoB6gHqAeoB6kHqQepB6kHqQepB6kHqQepB6kHqQepB6kHqQepB6kHqgeqB6oHqgeqB6oHqgeqB6oHqgeqB6oHqgeqB6oHqgerB6sHqwerB6sHqwerB6sHqwerB6sHqwerB6sHqwerB6wHrAesB6wHrAesB6wHrAesB6wHrAesB6wHrAesB6wHrQetB60HrQetB60HrQetB60HrQetB60HrQetB60HrQetB60HrgeuB64HrgeuB64HrgeuB64HrgeuB64HrgeuB64HrgeuB64HrwevB68HrwevB68HrwevB68HrwevB68HrwevB68HrwevB7AHsAewB7AHsAewB7AHsAewB7AHsAewB7AHsAewB7AHsAexB7EHsQexB7EHsQexB7EHsQexB7EHsQexB7EHsQexB7IHsgeyB7IHsgeyB7IHsgeyB7IHsgeyB7MHswezB7MHswezB7MHswezB7MHswezB7MHswezB7MHswezB7QHtAe0B7QHtAe0B7QHtAe0B7QHtAe0B7QHtAe0B7QHtAe0B7UHtQe1B7UHtQe1B7UHtQe1B7UHtQe1B7UHtQe1B7UHtQe2B7YHtge2B7YHtge2B7YHtge2B7YHtge2B7YHtge2B7YHtwe3B7cHtwe3B7cHtwe3B7cHtwe3B7cHtwe3B7cHtwe3B7cHtwe4B7gHuAe4B7gHuAe4B7gHuAe4B7gHuAe4B7gHuAe4B7gHuAe5B7kHuQe5B7kHuQe5B7kHuQe5B7kHuQe5B7kHuQe5B7kHuQe6B7oHuge6B7oHuge6B7oHuge6B7oHuge6B7oHuge6B7oHuge6B7oHuwe7B7sHuwe7B7sHuwe7B7sHuwe7B7sHuwe7B7sHuwe7B7sHuwe8B7wHvAe8B7wHvAe8B7wHvAe8B7wHvAe8B7wHvAe8B7wHvAe8B70HvQe9B70HvQe9B70HvQe9B70HvQe9B70HvQe9B70HvQe9B70HvQe+B74Hvge+B74Hvge+B74Hvge+B74Hvge+B74Hvge+B74Hvge/B78Hvwe/B78Hvwe/B78Hvwe/B78Hvwe/B78Hvwe/B78Hvwe/B78HwAfAB8AHwAfAB8AHwAfAB8AHwAfAB8AHwAfAB8AHwAfAB8AHwAfBB8EHwQfBB8EHwQfBB8EHwQfBB8EHwQfBB8EHwQfBB8EHwQfBB8IHwgfCB8IHwgfCB8IHwgfCB8IHwgfCB8IHwgfCB8IHwgfCB8IHwgfDB8MHwwfDB8MHwwfDB8MHwwfDB8MHwwfDB8MHwwfDB8MHwwfDB8MHwwfDB8QHxAfEB8QHxAfEB8QHxAfEB8QHxAfEB8QHxAfEB8QHxAfEB8QHxAfEB8UHxQfFB8UHxQfFB8UHxQfFB8UHxQfFB8UHxQfFB8UHxQfFB8UHxQfFB8UHxgfGB8YHxgfGB8YHxgfGB8YHxgfGB8YHxgfGB8YHxgfGB8YHxgfGB8YHxgfHB8cHxwfHB8cHxwfHB8cHxwfHB8cHxwfHB8cHxwfHB8cHxwfHB8cHxwfHB8gHyAfIB8gHyAfIB8gHyAfIB8gHyAfIB8gHyAfIB8gHyAfIB8gHyAfIB8gHyAfJB8kHyQfJB8kHyQfJB8kHyQfJB8kHyQfJB8kHyQfJB8kHyQfJB8kHyQfJB8kHyQfJB8oHygfKB8oHygfKB8oHygfKB8oHygfKB8oHygfKB8oHygfKB8oHygfKB8oHygfKB8oHywfLB8sHywfLB8sHywfLB8sHywfLB8sHywfLB8sHywfLB8sHywfLB8sHywfLB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzAfMB8wHzQfNB80HzQfNB80HzQfNB80HzQfNB80HzQfNB80HzQfNB80HzQfNB80HzQfNB80HzQfOB84HzgfOB84HzgfOB84HzgfOB84HzgfOB84HzgfOB84HzgfOB84HzgfOB84HzgfOB88HzwfPB88HzwfPB88HzwfPB88HzwfPB88HzwfPB88HzwfPB88HzwfPB88HzwfQB9AH0AfQB9AH0AfQB9AH0AfQB9AH0AfQB9AH0AfQB9AH0AfQB9AH0AfQB9AH0AfRB9EH0QfRB9EH0QfRB9EH0QfRB9EH0QfRB9EH0QfRB9EH0QfRB9EH0QfRB9EH0gfSB9IH0gfSB9IH0gfSB9IH0gfSB9IH0gfSB9IH0gfSB9IH0gfSB9IH0gfSB9IH0wfTB9MH0wfTB9MH0wfTB9MH0wfTB9MH0wfTB9MH0wfTB9MH0wfTB9MH0wfTB9MH0wfTB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1AfUB9QH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfVB9UH1QfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1gfWB9YH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfXB9cH1wfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfYB9gH2AfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2QfZB9kH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9oH2gfaB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9sH2wfbB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfcB9wH3AfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3QfdB90H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3gfeB94H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H3wffB98H4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+AH4AfgB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfhB+EH4QfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfiB+IH4gfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+MH4wfjB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QflB+UH5QfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfmB+YH5gfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfnB+cH5wfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6AfoB+gH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH6QfpB+kH","show":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgICAgICAwMDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgICAgICAgICAgICAgICAwMDAwMDAwMDAwMDAwMDAwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgICAwMDAwMDAwMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgICAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgICAgICAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMD","era":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC","slot":"AQIDBAUGBwgJCgECAwQFBgcICQoBAgMEBQYHCAkKCwECAwQFBgcICQoLDA0BAgMEBQYHCAkKCwwNDg8QAQIDBAUGBwgJCgsMDQ4PEAECAwQFBgcICQoLDA0ODxABAgMEBQYHCAkKCwwNDg8QAQIDBAUGBwgJCgsMDQ4PEBESAQIDBAUGBwgJCgsMDQ4PEBESAQIDBAUGBwgJCgsMDQ4PEBEBAgMEBQYHCAkKCwwNDg8QEQECAwQFBgcICQoLDA0ODxABAgMEBQYHCAkKCwwBAgMEBQYHCAkKCwwNDg8QERIBAgMEBQYHCAkKCwwNDg8QERIBAgMEBQYHCAkKCwwNDg8QEQECAwQFBgcICQoLDA0ODxARAQIDBAUGBwgJCgsMDQ4PEBESEwECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREhMUAQIDBAUGBwgJCgsMDQ4PEBESEwECAwQFBgcICQoLDA0ODxAREhMBAgMEBQYHCAkKCwwNDg8QERITFAECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREhMUAQIDBAUGBwgJCgsMDQ4PEBESEwECAwQFBgcICQoLDA0ODxAREhMBAgMEBQYHCAkKCwwNDg8QERITFAECAwQFBgcICQoLDA0ODxAREhMUFRYBAgMEBQYHCAkKCwwNDg8QERITFBUBAgMEBQYHCAkKCwwNDg8QERITFBUWAQIDBAUGBwgJCgsMDQ4PEBESExQVFgECAwQFBgcICQoLDA0ODxAREhMUFRYBAgMEBQYHCAkKCwwNDg8QERITFBUWFwECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkBAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcBAgMEBQYHCAkKCwwNDg8QERITFBUWFwECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGQECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkBAgMEBQYHCAkKCwwNDg8QERITFBUWFwECAwQFBgcICQoLDA0ODxAREhMUFRYXGAECAwQFBgcICQoLDA0ODxAREhMUFRYXAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRoBAgMEBQYHCAkKCwwNDg8QERITFBUWFxgBAgMEBQYHCAkKCwwNDg8QERITFBUWAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGQECAwQFBgcICQoLDA0ODxAREhMUFRYXGAECAwQFBgcICQoLDA0ODxAREhMUFRYXAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkBAgMEBQYHCAkKCwwNDg8QERITAQIDBAUGBwgJCgsMDQ4PEBESEwECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkBAgMEBQYHCAkKCwwNDg8QERIBAgMEBQYHCAkKCwwNDg8QERITAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGQECAwQFBgcICQoLDA0ODxARAQIDBAUGBwgJCgsMDQ4PEBEBAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZAQIDBAUGBwgJCgsMDQ4PEBESEwECAwQFBgcICQoLDA0ODxAREhMBAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGgECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaAQIDBAUGBwgJCgsMDQ4PEAECAwQFBgcICQoLDA0ODxARAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRoBAgMEBQYHCAkKCwwNDg8QAQIDBAUGBwgJCgsMDQ4PAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobAQIDBAUGBwgJCgsMDQ4PEAECAwQFBgcICQoLDA0ODxARAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRoBAgMEBQYHCAkKCwwNDg8QERIBAgMEBQYHCAkKCwwNDg8QERIBAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGgECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaAQIDBAUGBwgJCgsMDQ4PEBESEwECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaAQIDBAUGBwgJCgsMDQ4PEBEBAgMEBQYHCAkKCwwNDg8QERIBAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGgECAwQFBgcICQoLDA0ODxABAgMEBQYHCAkKCwwNDg8QEQECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkBAgMEBQYHCAkKCwwNDg8QEQECAwQFBgcICQoLDA0ODxAREgECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaAQIDBAUGBwgJCgsMDQ4PAQIDBAUGBwgJCgsMDQ4PEAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkBAgMEBQYHCAkKCwwNDg8BAgMEBQYHCAkKCwwNDg8QAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRoBAgMEBQYHCAkKCwwNDg8BAgMEBQYHCAkKCwwNDg8Q","n":"CgoKCgoKCgoKCgoKCgoKCgoKCgoLCwsLCwsLCwsLCw0NDQ0NDQ0NDQ0NDQ0QEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISERERERERERERERERERERERERERERERERERERERERERERERAQEBAQEBAQEBAQEBAQEBAMDAwMDAwMDAwMDAwSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhIRERERERERERERERERERERERERERERERERERERERERERERExMTExMTExMTExMTExMTExMTExISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhQUFBQUFBQUFBQUFBQUFBQUFBQUExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMUFBQUFBQUFBQUFBQUFBQUFBQUFBISEhISEhISEhISEhISEhISEhQUFBQUFBQUFBQUFBQUFBQUFBQUExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMUFBQUFBQUFBQUFBQUFBQUFBQUFBYWFhYWFhYWFhYWFhYWFhYWFhYWFhYVFRUVFRUVFRUVFRUVFRUVFRUVFRUWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFx0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgWFhYWFhYWFhYWFhYWFhYWFhYWFhYWGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkSEhISEhISEhISEhISEhISEhITExMTExMTExMTExMTExMTExMTGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGREREREREREREREREREREREREREREREREREREREREREREREZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaEBAQEBAQEBAQEBAQEBAQEBERERERERERERERERERERERGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoQEBAQEBAQEBAQEBAQEBAQDw8PDw8PDw8PDw8PDw8PGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbEBAQEBAQEBAQEBAQEBAQEBERERERERERERERERERERERGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhIaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaExMTExMTExMTExMTExMTExMTExISEhISEhISEhISEhISEhISEhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaERERERERERERERERERERERESEhISEhISEhISEhISEhISEhIaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhAQEBAQEBAQEBAQEBAQEBARERERERERERERERERERERERkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkRERERERERERERERERERERERISEhISEhISEhISEhISEhISEhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaDw8PDw8PDw8PDw8PDw8PEBAQEBAQEBAQEBAQEBAQEBkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkPDw8PDw8PDw8PDw8PDw8QEBAQEBAQEBAQEBAQEBAQGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoPDw8PDw8PDw8PDw8PDw8QEBAQEBAQEBAQEBAQEBAQ","place":"CAQHBgoBBAIDCAMJAQkECAUHBQIDBQYLAQgJBAkCBgIKDQoGBAcDCAwECAEJCg8KCAoODQQDDwcFAQIFBw0NDQoHBg0BCgoEBAMJAgQNCQcNAw0BCwIFDA0KBQgECggJBwYEAg0DDQENDQoMCwIPBg8EDQ8JCgMNBQcBDwwICg4ECgcDCg0BAgcGEREQDwQJDgQOAwwRCAwIBwEGDgUICwILEAcNCw0HBRADCgINBAEGBw0LAQYHDQEBCQcFEAkBDwwHBAgLCAQCDAQIAwEQEgEMAwIKDQQOBQYLBgkOCBEDCw8KAg4HCBIMBQYJDRARAQQGEQoIBwgCDA8NAQUOCgMPBA0ECQ4LBwwBBAQJAwcODg4CAQkEEQUSBg0CDA8LEw0HEAoIAwEEDwYOCAoJEg0LEAcFDAMCEQMEDBEOCBAOAgULBhIJDQoHAQUUDBIRAwkLCQINEgYECBAHAQ8OCQ8GBQ4QCAoEAQMSDQwRCwcSAggPDQkSBg4KBBMQAgMHBQsBDBEREgILBwsPEAMOCQUUARINCAYECg0GDAcPEgMFCAkEChEOAhALAQgJBgMLExMPCw4HBBAFEQINCRIBAQoIAxEHDwUCBA0SEw0MCRAFCwYJEAsOCg4TEgIFBwEEDAMIDRADCxEMBxANCQoCEwQBCBQSBQYPDgkIFBALDAMSExYKBRUNDgIHDwUBBBEQDBQCDwsJBwEIDhUDEQUSBAwKEgYJDBIPFRMCERAEFAMFBwgGCw0JFg4BBRMMEQ8NBgQVEggLCQIHFAIQAQoOFRUPBg0FFg4BAgwKCBMRAxQSEAQKCQcOFAYTBQgWEQsDBxcPFQoCAQwEDRIQCQwVEgMWCRkIDQ4KBAcBFBYREAIGDwsTGAUNFgELDAoQCBMYFQUXAxMZBg8OERIECQIHEg4XEwERDw0CEAYEFhQKFQkDBQcICgwMCBQGCQoEChAOBQITFQcQARcNDxYSAwYVDAgPGBkFDhYLAwwTFgIcChoECQ8SHRoBExEHBQMYFQIKFhYEBhILCBIYDgwJDA8QBxEBFAUUGBAZFREBBwMXEgkMFgILBAoGDwgMDhMUDBcEDAsQDggTCBICFgEVEQoFDwMHBhYNEAQXEQgLAhgVDBIBBRQJBw8SAwoGDhIWDhYQDAUNEgoRFQYECw8HFAgBCQMCBgMSEQcLCgMTDBYIFBgNDQUVEAIJDQEXCAYLARkQFg8UCwMIEw0aDhEEEgcYAhUKBRcKFRgPAgwUCAcBDAkWCw4DExYREAUEEgUOExYRCxIPCBMDAhAEBQoVCwkNAQcGDBYCAwkNBhASFQQHCRMRExgLAQ8OCAUXFRkRAgoYBw0OEBYUBgEFEgkXCAQTDgwDCxAUFxAOFRgOEgIMBAMGEwkBBxYMCgULCAYREBcWDgwJDxUKCwMIBwEUBRMEEgINCxQGGBEODwkVBwwSFhADEwECFg0FBAgKBhgPBA0IFhQKFRETEA4BHAsJEhkMAhYaBwMbBRQZERcECgkWFRgOBw0MEg8LAhMIAxAGAQUOBRILExEGCwQKDxAJAg0IBwMBCAwHARAJDRIRBgQLAwUTDg8KAhcQCBUSDwIHCgsDCQ4WBg0UBBEBDBMFGRgLEhENBAUPDgIHEAEKCQwIBgMNCxMKDAEOEggQDwIECQUHBgMRBQ8UFhURBg0YFwgZCQIQEwoMAwsHARIOBAoHDhALEQUIDQEMBgIEDwkDDAYIBRELAgcOBBAJDwoNAwEVBgUTFggDGAcQDwIZCwwKERIBDRQXBA4JExEODA0ICQoGAwsQDwQHEgUCAQUHEwsNBgoBEgwQDwMECQ4RAggZGAUOEgIUEBYJBhoEDBcRAQcKCBUNEwMPCw8IBBACAwsRDA0OBwkBChIFBgIJDwcQDQgLEQwBDgUEEgoGAxcWCxgZDBQQCAUVEgkNEw4KARECBgMHBA8aDgoQDQECAwYMCQcECA8FCxELEAEJBAwGAg4HCAMPCg0FBhAWDwgMBBMOFAESAxoHFRkLCg0FFwkCGBEEDQwCCA8GCQUOEAoLAQcDCQ4GDwgBCwMMBQ0EBwoCDhkJBxgQEgoIARYFBBoTDRsXBg8VFAsMAhEDCwcCDhAGAw8JCAwBDQoFBAcMEAkLBA4NAwIKDwERBgUIChkLERMQDgQFGgYIAhUSCRcDFg8BDBQNGAcPEBEECgUCDAEJCAcSBg0OCwMIBhIHDAoPCwQBDgURAg0JEAMXFhEQEgsDCAYUAQ4NCRMaCg8VBxkYBAUCDAMLBg4EEAwIAQoJAg8NBQcREgsHDxAGBAIKDRIIBQwJAREOAxEXFgwDCA8aGBMECw0GCRQZDgoHFQESEAIFCxMIDAMJARAFBxIRBA4KDw0GAgELCREFDwMHBBIODQoMAhAIBg4RCxkDDBMHBQ8NARUXBhoKFBgIEAISBAkWCRARCwYCDAoHDQ4BAwQPBQgQEgwEDw0KAxEOCAsGCQcBAgUQFRETCQcMDxoKAwQYDRkGCwgFAhQSFwEOFgQNAwcODxAGCgsJBQwIAgEJDQ8GDA4HAggQCgQDBREBCxYSCRURGAoUBgMLARkOEBMIFwcEDwIMBQ0MDgcJEQEQAggECw0PCgMGBQcNAwoSEA4CDA8LBQkGEQgBBA8XFBMYEAwRARYECAIKCQcOEgYFGgsDFQ0ZBg8KCwkMCAcDBQIOBA0BDgYPCggHCw0DBQwQAgkEAQkDDA0FDhYUBhALEhkHERMKCA8BFwIVBBgGCgQDAgwBDwkHDQ4LCAUQDwUECwkMAwcOCA0GAQoCEhYDAhAYCRMBGQ0MCwUODwYUChEVFwQHGggGBw0FAQQJCA4PCgIDDAsLEA0CCgUEBgkPCAwHAQ4D","points":"BQAIAAYABwADAB8ACAARAAoABQANAAEAGwABAAoAAwAIAAUACAAYAA8ADAAJAAEAFQAFAAQADgAEABAACQAZAAQAAQAEAAkACwAGAA8ABQACAAsABQAgAAgABgABAAYACQAGAAIAAwANABAAAQAKAAwAHwAYAAwABAAAAAAAAAACAAQACQAAABoAAgACAAoACgALAAMADQAcAAAABQAQAAAAJQAAACoAAwAoABkAAgAAAAQAGQANAA4AAgAGAAQACQALAA4AEQAAAA8AAAAxAAAAAAACAAEABQAaAAAACwAAABAAAQAAAAcABgAWAAEADwAKACAAAAACAAgABwAEAA4ABwAJAA8ABwAGAB8AEAAJAAwAAAAAAAEAAgAOAAgAAgARAAIAFAADAAAABwADAAcACAAvAAkAAgAKAAcABAAWAAUAAQAIAAIABQACAAgADwABABQABwAcAAIAEgAdAAsACAAFAAcAEgALAAoABQASABIACAAKAA0AAQAIABIABAAGAAcACAAFAAQABQAIABoAAAAIAAUADAAgAEIANACAAE4AZAB0AFIARgBiAEQAWwBVAE8AVQBTAEQAVABBAGsAUQBIAFMAcgBJAFoAWAAwAE4AZABcAFcASwBBADcAgABqAF0AOgBQAFUAWQBVAH0ATwBBAEoAgQBeAEUAUAB7AEEAYQAEAA4ACgADAAcACwAGABgADgAOAAoADwALAAMAAwADABIAmABEAFsADwBUAAsATQAWAIoAIAARACgAAwAWAEoAEAA1AEgAcwCkAFsADABNABEARAA2ADgABwAUACwACwBFAFAAGABdAJMACgB3AGAAIwALABIANwARABIAeQBcADEARwACADQAIQAyAEUAiABWAAAANQACAAUAdwBBAD0AQQB9ACUAAgBUAGsAQgANAEkAnQAOABoAQAAbAEwAUAAmAAwARQA8AFYAfQBqAAUALAAzAAgAOQBJAAUAdABAABcAHgA4AAcAVwAZAC8AaAAGAA8AgABqAEcAXQAtAI8AJgAOABQACQCEACkAOAApACMAGwB9ACYAMwBpAAAAiAAJACgANwBFAHkAMgAgAE4AKABMABQAAABhAFUAQwA5AGAANAAFABUAZAAIADEAoQA4ADUATwB+ACkAAAAAABwAKQAgAEIAfQAaAF4AEACIACEANQANAI4AkQAnAD0AagAdAD8AHwBGAIkAZQAiABoABQAiACUALgAeAEYAJgBbADoADwApACQAOAAkAAcACQBpAF0ATgB7AGQAJwBnADwAJQAPAHUAMQANACwASAATACgANQAzAIwABwBgALAAPgAEAAwATgBNABYAHABBAEkACAAcADgAMgBnAA8ACgAAAEAAUwAEAC8ALACNAFAAIABTAKwAXAAaABQANAADAIgAJQA6AEYAVQCJAE8AMAAAAFwACgBYAAUAWgA0AEAABQBXADgAMgAVAC0ABQANAIIAHgAnAG4ACABvAGEATAA8AFgAMwAvADgAAAAuAIkAYAALAC4AFQAZACYAVwB8AAgAEABAADMAPACEAFEACQCEABgAlQA6ACQACAABABoAagAkAHYAAAAdAJIAkgAsAC8APgAIAA4AiwAGAAoAFwB3AC8APABZACUACwBVABEAXgBJAAkAGgA5AHsAUAAEACAACgA/AIsAmwAvAG8ALAAXABsAQwAtAAoAEgCUAAkAQAADAEUAKgAgADwAeQBZALsACwAJABQAGwCkAFwAHwA6ABEABAB4ADAACwDiADMAMQA/ABsASQAPAAIADgBhAAQAgAAPAAAATAAnACwAEwARAHoARgCmAEoADwAsAAEADgCUABEAHwBDAHcAFQBbAF4AAwAIAEwABQBPAGQAXABUAFEATABEADkATQARAFwASABEAGIARAAWACQAXgByABIAEABOABYAogAJADMAHwANABMAZABQAB0ALQBDACoAGAAWAGoAKwAaADcAmQAtAB4AGgDGAAwAOwAOAIoAPwAqACAACwAOAOMAHgAmAEUAYgB5AAAADACdADwABQAFAHIAYAAWADYAUgAWAAAAJAAnAEIAJwAhABkAXwAYAOMAEgCDAAwAAwAVAAAACAATAKwAVgClAAQAEQBAACQABgCmACUAlgA1AHoAFgBPACQAGQAQAA0AJgABAHYAJgAyABUAIwBHAA4ARwARAJIAAgCjAAwAEgBBAF0AIACMAFYAWgAHACgAHABiAAUAGQBJADkAmwACAAgALQASAMMAYAAOAEYAWAAdABIAiAA7AFwAIgAQAAMAHQADABkAJQBkACMAEAAqABIABgBMAI4AKQAcAEYACwBCAMYAMACTALEAVQBvABoAGwBRACwANwBvABkAJQAPAEgAGAAHACEAIQBoABEAHQCkAEcAIQCwAAwAUQBlADUApwAEABsADQAdAA8ANQCkAFEAEQAtAAAAHgAZAHsAEwBaAAUApQAOAEkAawAHAFcACQADACgABwEyAAsAXQBqABgBMgBbAAcAQwAvAPwAEAAHABsAHQCqAMMAEgCqADMACgAAABcAOQAMACYASgAKAO4AAAEaAKcAlQBHAAUAOQBIADgABwGFAJIAYQASAMAAngB9AFwAlAA1AC4AHACaAIkAfQAeADQAHgAEAHMA5gA5AE8AgACZAAsAHgARADMAzwBVABYAngBDADUANAAdAB8ApADrAKcAMgBhABsAcgCpADEANQBFALkAUQAeABYABAAeACQAEgABACQAGgD4ADgArADlAKIAGQCAACQBkQAFADgAXQCqAFsAgQCWACQAMQAIAAoAOgBFAE8AOQAOAEwARgDZAFsAkgAkARYAowAaANYAHAALAT4AagArAJEABQA1AEkAQgCAABwAiwBhADMAEwA2AM8AMQAMAesAEwBUAJ0AowCKAG0AkgARAEEAsABNAHsAIQAoAFsAJgAxAC0ANgBLACoBAQBYAGEAMAAPAFAA4AAhAA4AjADFAAQAqAAtAA4ANwAOAMcAbgB8ACMALAAOAEAAigBFAFMALwA8AFMA5gAvAIQA2gA3AKAAEAG2ABcAaAAIACQABQAQAGAAJABqACoAFgAWAEgAiwAbAE8AXgCHAJwARAA2AFUAmAAeAEMALwAJABsAVgBwADgAcABrAAYAJgAkAEAAeAAXADUAawAhAC0AOQDaAHgAXABbAM8AagBFAB8AgQBKACMAsQAwAIMBTAAoAK0AFgAXACwAAAABABkAaQBjAAgADwCsAEsABwCuAC0AQwAqAEYAVgB9ACEANAAHADwAKwDJACAACABFAA4AEAC0AG4AQgBqAEkAUABzAAsAkQBEACMAGwAbADMAjwBIABIAGQCMAAoAiACqAD4AKQBsAFIAogBaAI0A9gArAEcAlQA0AEoAJwAYADEACwBPADsALACnAC0ATACFAFkAJQA7AHsALABTAEcAZQACAD4AcQBNAB0AaAAGAEMAEwBDACEAagB2ADkAfQCGAD8ANQB3ALkALAB4AE0AUgC9ABMAZABhAGsATQBAAN0AYAA9ADIAnwBVAG4AEgAeAC8ANgAvAEMAQAA3AEoAZwA2ACIAKQBkAEgAFgBRAHoAhQBtAEUADQA1ADAAUQA2AJsAEAAwACQAJgBwAG8APAAtABkAhwBEAAwAEwCSAEYANwADAS4AQQAVAGUAeAAHAJYARwAVAEAAdAFwAGEAbgApAEcALgDWAEEAUQAUAEsAdAARAJIAeAAtABAAKQAhAB8AWwA/AJgANAAIAGQAXACfADUAIwBGACMAJwBAAC0AHwAqALUAJABQAGQAFgAtAE0AaAAOABEARwANAAgARwATADAAeACuABIAKQByAEEAFwA+AFQAGQEvAOoAmADWAH4AvwAyAAUAGwA0AAgAJgCnAJwAjABLACkANQBAAF8ANgALAEsALgANAC8AHACLAEAAdgAtAEgAeQAoAEUAQgB4AB8APwApAFMAcQArACEAOgBYAEgArgAlAD4AIwAiAScA2gACAFkAIQAJAEgASgBAAI8AIABKAO4ADgAoAHkAIQAkAIMAPQAWAD8AOQB2ABwADQAoACcAlgA/AH8APwATAE0ADwBGAKkAJABhACMAVwAhAFwASgA0AH0AJwAEAGEAagAFACIAHgA1AGYAbQELAMQA2QAAABcALAAAAAoAugAjAA8AEwAzADEALwEiACQBKQBNAJUAIQANAFEAaQAcAD8AQwAnALYAIQA+AFkAYgBDACMACwA5ACsAewATACEAlwCbADUADgDZAAQAVwBcADkAtQApAJkAdQBsAHwAhwAzAQUBCwABAeUA/wFgAHMAyABJAOsBTQCEABYCmQBoAJcAPgD5ADMALAAhAMUAhQDFAPMARABWAaEApACqABgAuQA8ADMAaADRAIQAlwAcAJMAVABpAC4AWADeAEoBOQDcACIAHwE/AHsALQASAScAQABTAF0ATwCWAHYByABOAU0A9gJ4AIAArQBNAAUAngBvAEQAGgEGACQAawFYAWcChwDjAGMAoABMAKUAOABcAJYAcgFzAHcAIwE8AFMApACYACQAFQBiAJMARQA3AK4AyADnAGUAVgABAI0AvQBhAG4AkwEqAFUAzwCCAD0AQAC1AFYB9QCQACcAMABxAFQBuACtABkB4gBjAC4ApgDRABIBXQARAnkAiAC0ATQBXgAPAKIAWwDoAHcAGwFBAMkAsQAYAD8A5wBRAGwATwBWALMABgEKAWsAdQAcAMwAQQDrAK4A1AAYAFEAZQBvAGoA/gAoAIQAswBrAFoAnQAYAHIBeABNADEBTgFpAG0A8gFKACMASwELAOgATAAfAC4BaQDYAVkAbAEcATYAlQAuABcAeACnAPIAYQB6AJwARgA+AAUB3QDGADMAuQCWADEAEABVAOgAMgBHAF4A7gAVAEAAnQBdANkAYADSABgB7wDgAF4AOQBdAEoAzAD/AJkAZgAAAKoAsAF6AQYAcwADAC0BqgDcAGwB8wFBAEsACwAMAm0AMgDLACwA4QCOABwAFwAUAKoAcwBuAHUAwABVAIoACwFFAXYAOgAXALgAQgAjALMAIAF8ABAAcADvAPoA6gAOACMBWQAmAEEAzwAmAE4AEQC2AD0ADAHLAasAdwIGAIAAagBAANcAFAD9ALYBfQDSAZcAOAGNADoANwCfAHYADwBRAR0A3QCaANAASwA3ACoAZwDTALEAuwCiAD0A7QBgABYALwAyAPMAPwAvAEwA0QB2AMYAIQCXAIwB4wB4ADsAXABdAB4AaAB+AGQARwJMAF4BqAAOAoEAlwC2AHoAYADzAAwBEgB/AGoBTgB7ABgAZgADACUAIgBKAAoATABhAH8AbQCHAAQAbgAHALEABgBjAAAASgBaAF4ALAAOAHwAZwAhAAAAiQBTAG4AlQCuAMUBdQBnAHcBWgAeACUAFgFAAH4ALgAQAAwBNgAmAJgAtwBOAE8CGwAjAiIAvQEYAEMALwB3AHwArQAjALEAAwAzADsAFAALACkAOgB1AA0ADgBWAIQAJgAuACQAiQBIABAANgASAE8AwgArALYAWQAvAGQBZQFgACUA2gBYALQBIQCeAK8AxAAAAZwAlwDnAEgA1gBbADIALwBBAeYAGwDaAGEAVQAXAHEAiQB2ADgAUgAXAAcALgB6AHkAHAAsACkADAAcAIIAMwBoAHAAZwA1ABwAPQAdAD4AywAcAHMA","country":"BxsyGAQiEhANLxgiEBsuDQcSBC8QDRgfIhIuLwQyBzIuGw0HIwQfLyISGBAtHwQPMyIuEhAvByMNGzIYDwctBA0uEiIQIy8zMhsYHzIiEgQjGA8NMy8QLS4HHxsbIiMNDwQQMhIfJRgzLwctIjItFhIEIwcfLhAlGA0bDzMvEg0HGzMjDyUELi0vHxgQIhYyIhsEECUvLg8SBzItIx8zGBYlIgcEGy8fLg8QGDIjFi0SMzMbLR8WGDIiLgcvIxIQJQ8iLxgzBxAyGy0fEhYEHR8vEi0QGzIHGC4WIiUzDyMSEBYtMiMlLx0PBBgzLh8HGyIPByUSIx8tLzMYGy4iFjIQFw8yLSMTFzMuGx8HIhYSLyUYIhYQEhsjLzMyHQcXMB8PJS0uGDIvEhcbBxYiIxMPLRgEJR8QMxYfIgQjEhslMhMXLy4tGA8HEBYjGA8lEC0yLwciMBIfEw0bFwQuJRgNFg8fEy8SFxAHGyIuIzIELQQwExshGA0uLw8jEjIlIhAWLQcEMBIbFw0zDxAtIhYjMiUHEwsvLiUbIzIwDy8LLgQHLQ0zFyIWEhAjMi4YMC0vDxMiMwsSDRclBAcbLhsQLSMyCwcWDSIzBBIwDy8YJRYPCw0tEDAHJRIXGCMyLy4EGxMbMxAjMhUiMC0vFxYHEgsELg0PJSMXBBUHLhglLTATIhsyEBILDw0WMy8VLg8yMC0iFy8WEgQNEyMHGxgQJTMYFxYiMAcyIyUuGw0EDxAtCy8TFRIzLRMHMCIbMhUjFw0vEhAzJRYuGAQLDzMVHRMvBBsuEDAWJQ0jFw8SBy0yCxgtBxcwExAuJQsdFQ8vGwQyFg0YMyMSIhgwEi8NEwcdFQQlEC4WGywPCDIiCi0LFyMuDxYLFTIKJS8OJh0iEisaIwgTBC0UJyQQJBYSCCMnFQQtMAoQFAcyJQsuDSwXHRMwMi0lCx0KBC8TDiMQLCIHFg8VJAgrLgQIBy8LEg0OLQ8QMhMKFBYXFRwdIiQlJicuLCswCzAjBBYsLyIYLRIkDgglLhMdFCcNEAoyFQoTEC0vKyQXEh0ULBYlJjILIi4HDyMOMBwaBy0KMiwwIw0QIiQVCy4lFgQXHRIIDhciMg4QJh0jJwcLFS0NEi8KLhwPGTAWBCIVCCMXJy4aGQolFi0QMDIsJBIOHRMNCzIEEy0KJw4cFy8uDw0IBxASMB0mLBkaFQQWMB0IJQoLEictFyIyMRMjECQZBw4mLiwtBCMQKh0iEgAxCggHJxwTFRYkMgswJi4PBi8ZFwElHR8TMRoACxwsDgoNKggiFDIdJiMwHgALLRcqDS4cMRIKEycILxkQBBolHhkfFwYiFQcOIyYUDxwBLwoJFiwNJC8eFxkjLR0SDSccJggaMhMPMRAKFi4wAgIJLAEGAAcWCx8cJCcwMQ8iGiUuDggVCC0GFg8cLBQaExEuEBknEikxMiYJMAIeCRcLBhURIC8eIgANCiQpDCUcIx0BFA4HLDAEGSYyABICCBcPCiQVMCUZLg0RMRAFEy0pJyMgFw4eKAcFLCMkFgEIAiIPJicTFS4wMRoALwwGGQoJDREUHQscJRoXEC4KJRUTAicFCB4dDg0SMAAjMSYyDy0gDAcGLgIBLzAXCRUcJg8lHQgKFhkpJCMLKw0sFAUTGh4AMQ4iBS0jHgsIBykGFhMyETAAFTEQJicCEiUXDR4nDisPGSkIJAcdABMlHAYVGgIXDS8uBTEiJiwWCQsKETAPCA0aFBYuDhMnEBgvMh4SJgQFLBUtMSkRJCMAAjApJy8RDx0oChUUJRoFEwgEIgcrMR4uCwkcFywmDgYZDRYyFAAaCCcVCxAYDiMFJg0TLjAtEh0cFikxHiAVExkAJi8HDxcoCw0nFAQeFikcIh0GJTEJLAouETAOKyMIGhAaHg8tBw4GHScSAiImMi4UDRUFEzEYIxEWBA4sCg0nMSIgGgYeFgsHKRkoHAUPHQkVExcCFCMAES8mMQYFFSMmAiAkEwQSLhAnGCwPLS8UHQ0iKDICGQ4uFQAnBTEHHiglIiAUHRcjESQEGg8WBhwvEywmLBAXDjICGikjLgsDBwQTIBIkGSYtFBEFJwAYHgIHIg8TDhwpFAYnDQAmERoWKCAdIyUMFxkFFS4vCywkBwwiBRQYFwkuEhAkAwspGgonLRkxHREEMgIPEx4UCiICKCcMCwQOBSAVCB0ZJC8XBikWHBoDLAkNMSMRAAcXJAYEAiIeFBgNJQUKAxMtIzILJhIxBy4JEC4RAwAHIA8FJRMkHhUMCwIsGSkEHB0mIhQNFigKIy8GCRoOFzEtLBoEDiMlMikSABAMDQMPCR4uFBciFgsYBRUABwwaFwYOCRwKBBMPAi8WCyMmKSgNJx4iAxEkHRQZLiAsMR0ADBInDSgcLiwLIhMXIzIVDgYFEBgpLwMtCyAPJCwMFAYpBxEDFQ4lEygCFh4vGSYNLgQKHRonACMiHAULABcHJx0lKTITLxUtHhIPCRoxEAUjIhguKBosJy4DHBYLIwoHFyYFMR0oDgwTBCQeFSkRACUJDxkvDQwmJQ8vECMCGC0iMRIaBQcTFR4uAzIkKQ4AGRovLDEJIh4lCg0EFRMjAg8XKQURHSgDCxYcDiYkIAcuDAQlLyQpEAstLgAYDg8MAwcCHjEjEhoXLAoyIx0pGSUWCi8XHi4FDCIPDQImDgcLFRMkLBEoBAAaAy4xEhsXGi0OFhkTMiMYKQ8lAgsvLAoREAQLKRoWMSQKFSwPHgUDJRsdABMvDAQNAhkoEQcOFyMiIxsOFxotMTIEFRkiDxgkEhMCLx0lDS4QKAAVJCwOMS4lIwcFKAAiCgsDIBYZAgQTGh0RDQwbFykP","flags":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgICAAACAgICAgICAAIAAgACAgICAAACAgICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAgACAgIAAAIAAgICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIAAgAAAAAAAgICAAIAAgIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAACAAACAAICAgIAAgACAAIAAAAAAAAAAAAAAAAAAAAAAQABAAAAAAEAAgAAAgACAAACAAAAAAACAAACAAABAgAAAwMBAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgAAAAADAAICAAACAgACAgMDAgICAgACAAAAAgIAAwIAAAABAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIAAAICAAIAAgICAgICAAAAAAIAAAIAAAICAgICAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAAAAAAICAAIAAgICAAICAAICAgAAAgIAAgACAAIAAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgAAAAICAAICAgICAAAAAgICAAAAAAICAgAAAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgACAgAAAAAAAgICAgACAgICAAIAAAIAAAACAAICAAICAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAICAgIAAgICAgACAAAAAAICAgACAgACAgIAAgACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAACAgACAgIAAAIAAgICAgACAAICAAIAAgACAgICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAAACAgACAgACAAICAgIAAAIAAgAAAgICAAIAAgICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAAICAgIAAgAAAAICAgACAAIAAAICAAIAAgACAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgACAAACAgICAgAAAgIAAAACAAACAgICAAACAgACAgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAICAgACAgAAAgACAAACAgIAAgACAAICAgAAAAIAAgACAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAICAAICAAACAgIAAgIAAAACAAACAgAAAgACAgICAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgIAAAACAgACAgACAgICAAACAAACAgIAAgICAgACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAAIAAgICAAAAAgICAgIAAgIAAAACAAAAAgICAAICAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAAIAAgICAgIAAgACAAIAAgICAAACAgAAAgICAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAgACAAICAAAAAgIAAAICAAIAAgIAAgACAgICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgACAgICAgAAAgICAAAAAAACAgICAgIAAgACAgAC"}};
+
+/* ---------- decode ---------- */
+function dec(b64, T){
+  const s = atob(b64), u = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+  return new T(u.buffer);
+}
+const C = DATA.cols;
+const R = {
+  year: dec(C.year, Int16Array), show: dec(C.show, Uint8Array), era: dec(C.era, Uint8Array),
+  slot: dec(C.slot, Uint8Array), n: dec(C.n, Uint8Array), place: dec(C.place, Uint8Array),
+  points: dec(C.points, Int16Array), country: dec(C.country, Uint8Array), flags: dec(C.flags, Uint8Array)
+};
+const N = DATA.rows;
+const FINAL = 0, PREQUAL = 4;
+const isSemi = s => s >= 1 && s <= 3;
+const sf = i => (R.slot[i] - 1) / (R.n[i] - 1);
+const pp = i => (R.place[i] - 1) / (R.n[i] - 1);
+const chose = i => (R.flags[i] & 1) === 1;
+const qual = i => (R.flags[i] & 2) === 2;
+/* a permutation p never claims more precision than its number of shuffles */
+const pstr = r => r.k === 0 ? "p < " + (1 / r.B).toFixed(4).replace(/0+$/, "") : "p ≈ " + r.p.toFixed(r.p < 0.01 ? 3 : 2);
+const fmt = (x, d = 3) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(d);
+const pct = x => Math.round(100 * x) + "%";
+
+/* deterministic RNG, so the page shows the same numbers on every load */
+function rng(seed){ let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a;
+  t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+/* ---------- prior strength (the control's input) ---------- */
+const prior = new Float64Array(N).fill(NaN);
+(function(){
+  const hist = {};                                   /* country -> [[year, pp]] from finals */
+  for (let i = 0; i < N; i++) if (R.show[i] === FINAL) (hist[R.country[i]] ||= []).push([R.year[i], pp(i)]);
+  for (const k in hist) hist[k].sort((a, b) => a[0] - b[0]);
+  for (let i = 0; i < N; i++){
+    if (R.show[i] !== FINAL) continue;
+    const prev = (hist[R.country[i]] || []).filter(h => h[0] < R.year[i]).slice(-5);
+    if (prev.length >= 2) prior[i] = prev.reduce((s, h) => s + h[1], 0) / prev.length;
+  }
+})();
+
+/* ---------- statistics ---------- */
+function corr(x, y){
+  const n = x.length; let mx = 0, my = 0;
+  for (let i = 0; i < n; i++){ mx += x[i]; my += y[i]; }
+  mx /= n; my /= n; let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++){ const a = x[i] - mx, b = y[i] - my; sxy += a * b; sxx += a * a; syy += b * b; }
+  return sxy / Math.sqrt(sxx * syy);
+}
+/* rows grouped by show, so slots can be shuffled within each show */
+function groups(idx){
+  const g = new Map();
+  for (const i of idx){ const k = R.year[i] * 10 + R.show[i]; if (!g.has(k)) g.set(k, []); g.get(k).push(i); }
+  return [...g.values()];
+}
+/* permutation test of corr(position, y). Also returns the per-decile null so
+   the slot chart can draw its chance band from the same shuffles. */
+function permTest(idx, yOf, B, seed, deciles){
+  const G = groups(idx), rand = rng(seed);
+  const order = G.flat(), y = order.map(yOf), x0 = order.map(sf);
+  const obs = corr(x0, y);
+  const nulls = new Float64Array(B), decNull = deciles ? Array.from({length: 10}, () => new Float64Array(B)) : null;
+  const x = x0.slice();
+  for (let b = 0; b < B; b++){
+    let o = 0;
+    for (const g of G){
+      const m = g.length;
+      for (let j = m - 1; j > 0; j--){ const r = o + Math.floor(rand() * (j + 1)); const t = x[o + j]; x[o + j] = x[r]; x[r] = t; }
+      o += m;
+    }
+    nulls[b] = corr(x, y);
+    if (deciles){
+      const s = new Float64Array(10), c = new Float64Array(10);
+      for (let i = 0; i < x.length; i++){ const d = Math.min(9, Math.floor(x[i] * 10)); s[d] += y[i]; c[d]++; }
+      for (let d = 0; d < 10; d++) decNull[d][b] = s[d] / c[d];
+    }
+  }
+  const sorted = Float64Array.from(nulls).sort();
+  const k = nulls.filter(v => Math.abs(v) >= Math.abs(obs)).length;
+  const p = (k + 1) / (B + 1);
+  const band = [sorted[Math.floor(.025 * B)], sorted[Math.floor(.975 * B)]];
+  let decBand = null;
+  if (deciles) decBand = decNull.map(a => { const s = Float64Array.from(a).sort(); return [s[Math.floor(.025 * B)], s[Math.floor(.975 * B)]]; });
+  return { obs, p, k, B, band, decBand, n: idx.length };
+}
+const third = i => { const v = sf(i); return v < 1/3 ? 0 : v < 2/3 ? 1 : 2; };
+function byThird(idx, yOf){
+  const s = [0, 0, 0], c = [0, 0, 0];
+  for (const i of idx){ const t = third(i); s[t] += yOf(i); c[t]++; }
+  return s.map((v, t) => ({ mean: v / c[t], n: c[t] }));
+}
+function median(a){ const s = [...a].sort((p, q) => p - q); return s[Math.floor(s.length / 2)]; }
+/* OLS of y on two regressors, returning the first slope */
+function slopeAdj(x1, x2, y){
+  const n = y.length, m = a => a.reduce((s, v) => s + v, 0) / n;
+  const a = x1.map(v => v - m(x1)), b = x2.map(v => v - m(x2)), c = y.map(v => v - m(y));
+  const dot = (p, q) => p.reduce((s, v, i) => s + v * q[i], 0);
+  const saa = dot(a, a), sbb = dot(b, b), sab = dot(a, b), sac = dot(a, c), sbc = dot(b, c);
+  return (sac * sbb - sbc * sab) / (saa * sbb - sab * sab);
+}
+function slopeSimple(x, y){
+  const n = y.length, mx = x.reduce((s, v) => s + v, 0) / n, my = y.reduce((s, v) => s + v, 0) / n;
+  let sxy = 0, sxx = 0; for (let i = 0; i < n; i++){ sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; }
+  return sxy / sxx;
+}
+
+/* ---------- selections ---------- */
+const rows = f => { const a = []; for (let i = 0; i < N; i++) if (f(i)) a.push(i); return a; };
+const finalsOf = (era, incChose) => rows(i => R.show[i] === FINAL && R.era[i] === era && (incChose || !chose(i)));
+const semisOf = (eras, incChose) => rows(i => isSemi(R.show[i]) && eras.includes(R.era[i]) && (incChose || !chose(i)));
+
+/* ---------- headline numbers (fixed to the lottery finals) ---------- */
+const A = finalsOf(0, false);
+const resA = permTest(A, pp, 2000, 11, true);
+const thA = byThird(A, pp);
+const medField = median(A.map(i => R.n[i])) - 1;
+const placesGap = (thA[0].mean - thA[2].mean) * medField;
+const rawPlace = byThird(A, i => R.place[i]);
+const Bsel = semisOf([0, 1], false);
+const resB = permTest(Bsel, i => qual(i) ? 1 : 0, 2000, 12, false);
+const thB = byThird(Bsel, i => qual(i) ? 1 : 0);
+const Ac = A.filter(i => !isNaN(prior[i]));
+const resC = permTest(Ac, i => prior[i], 2000, 13, false);
+const controlOk = resC.obs >= resC.band[0] && resC.obs <= resC.band[1];
+const outAc = permTest(Ac, pp, 2000, 14, false);
+const bRaw = slopeSimple(Ac.map(sf), Ac.map(pp));
+const bAdj = slopeAdj(Ac.map(sf), Ac.map(i => prior[i]), Ac.map(pp));
+
+/* ---------- render: hero ---------- */
+const words = {0.5: "half a", 1: "one", 1.5: "one and a half", 2: "two", 2.5: "two and a half", 3: "three"};
+document.getElementById("nRows").textContent = N.toLocaleString("en");
+document.getElementById("nShows").textContent = new Set(rows(() => true).map(i => R.year[i] * 10 + R.show[i])).size;
+if (controlOk){
+  const r = Math.round(placesGap * 2) / 2;
+  document.getElementById("fPlaces").textContent = words[r] || r.toFixed(1);
+} else {
+  document.getElementById("finding").innerHTML = "<b>Control drifted.</b> The draw does not look random against prior strength in this build, so the running-order result is withheld. See the control section.";
+}
+(function balls(){
+  const el = document.getElementById("balls");
+  for (let k = 1; k <= 24; k++){
+    const b = document.createElement("span");
+    b.className = "ball" + (k <= 8 ? " e" : k > 16 ? " l" : "");
+    b.textContent = k; el.appendChild(b);
+  }
+})();
+document.getElementById("nums").innerHTML = [
+  [fmt(placesGap, 1), "places better, on average, for the last third of a drawn final than for the first"],
+  [rawPlace[0].mean.toFixed(1) + " → " + rawPlace[2].mean.toFixed(1), "mean finishing place, first third against last third, " + A.length + " songs in " + groups(A).length + " finals"],
+  [pct(thB[0].mean) + " → " + pct(thB[2].mean), "semi-final qualification, first third against last, " + Bsel.length + " songs drawn 2004–12"],
+  [pstr(resA), "for the finals, against 2,000 shuffles of the same draws; the semi-finals give " + pstr(resB)]
+].map(([v, d]) => `<div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+
+/* ---------- render: slot deciles (interactive) ---------- */
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+let decEra = 0, decInc = false;
+const decCache = {};
+function drawDeciles(){
+  const key = decEra + ":" + decInc;
+  const idx = finalsOf(decEra, decInc);
+  const res = decCache[key] ||= permTest(idx, pp, 2000, 20 + decEra, true);
+  const s = new Float64Array(10), c = new Float64Array(10);
+  for (const i of idx){ const d = Math.min(9, Math.floor(sf(i) * 10)); s[d] += pp(i); c[d]++; }
+  const svg = document.getElementById("deciles"); svg.innerHTML = "";
+  const W = 960, H = 330, L = 46, Rr = 10, T = 14, Bt = 40, lo = 0.3, hi = 0.7;
+  const y = v => T + (H - T - Bt) * (1 - (v - lo) / (hi - lo));
+  const bw = (W - L - Rr) / 10;
+  for (const g of [0.3, 0.4, 0.5, 0.6, 0.7]){
+    el("line", {x1: L, x2: W - Rr, y1: y(g), y2: y(g), stroke: "var(--rule2)"}, svg);
+    el("text", {x: L - 8, y: y(g) + 4, "text-anchor": "end"}, svg).textContent = g.toFixed(1);
+  }
+  el("text", {x: L, y: H - 6}, svg).textContent = "← opened the show";
+  el("text", {x: W - Rr, y: H - 6, "text-anchor": "end"}, svg).textContent = "closed the show →";
+  const tip = document.getElementById("decTip");
+  for (let d = 0; d < 10; d++){
+    const m = s[d] / c[d], x = L + d * bw;
+    const [b0, b1] = res.decBand[d];
+    el("rect", {x: x + 4, width: bw - 8, y: y(b1), height: y(b0) - y(b1), fill: "var(--band)"}, svg);
+    const col = d < 3 ? "var(--early)" : d >= 7 ? "var(--late)" : "var(--ink3)";
+    const top = Math.min(y(m), y(0.5)), h = Math.abs(y(m) - y(0.5));
+    el("rect", {x: x + bw * 0.28, width: bw * 0.44, y: top, height: Math.max(1.5, h), fill: col, rx: 1.5}, svg);
+    el("circle", {cx: x + bw / 2, cy: y(m), r: 4.5, fill: col}, svg);
+    el("text", {x: x + bw / 2, y: H - 22, "text-anchor": "middle"}, svg).textContent = (d * 10) + "–" + (d * 10 + 10) + "%";
+    const hit = el("rect", {x, y: T, width: bw, height: H - T - Bt, fill: "transparent", tabindex: 0}, svg);
+    const say = () => tip.textContent = `${d * 10}–${d * 10 + 10}% of the way through the night · ${c[d]} songs · mean finish ${m.toFixed(3)} of the way down · chance alone: ${b0.toFixed(3)}–${b1.toFixed(3)}`;
+    hit.addEventListener("pointerenter", say); hit.addEventListener("focus", say);
+  }
+  el("line", {x1: L, x2: W - Rr, y1: y(0.5), y2: y(0.5), stroke: "var(--ink3)", "stroke-dasharray": "3 4"}, svg);
+  const v = document.getElementById("decVerdict");
+  const label = ["drawn by lot", "drawn by lot with exceptions", "set by producers"][decEra];
+  const sig = res.obs < res.band[0] || res.obs > res.band[1];
+  v.className = "verdict " + (sig ? "ok" : "");
+  v.textContent = `${res.n} songs in finals ${label}: correlation of position with finish r = ${fmt(res.obs)} (negative means later finished higher); chance band ${fmt(res.band[0])} to ${fmt(res.band[1])}; ${pstr(res)}.` +
+    (decEra === 2 ? " Producers chose these slots, so this is not an experiment." : "");
+}
+document.getElementById("eraChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  decEra = +b.dataset.era;
+  for (const c of document.querySelectorAll("#eraChips .chip")) c.setAttribute("aria-pressed", c === b);
+  drawDeciles();
+});
+document.getElementById("incChose").addEventListener("change", e => { decInc = e.target.checked; drawDeciles(); });
+drawDeciles();
+
+/* ---------- render: thirds ---------- */
+function thirds(id, th, fmtv, lo, hi, invert){
+  const svg = document.getElementById(id); svg.innerHTML = "";
+  const W = 440, H = 220, L = 10, T = 26, Bt = 34, bw = (W - L * 2) / 3;
+  const names = ["first third", "middle third", "last third"], cols = ["var(--early)", "var(--ink3)", "var(--late)"];
+  th.forEach((t, k) => {
+    const frac = (t.mean - lo) / (hi - lo), h = (H - T - Bt) * (invert ? 1 - frac : frac);
+    const x = L + k * bw + 18;
+    el("rect", {x, width: bw - 36, y: H - Bt - h, height: h, fill: cols[k], rx: 2}, svg);
+    el("text", {x: x + (bw - 36) / 2, y: H - Bt - h - 8, "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--ink)"}, svg).textContent = fmtv(t.mean);
+    el("text", {x: x + (bw - 36) / 2, y: H - 16, "text-anchor": "middle"}, svg).textContent = names[k];
+    el("text", {x: x + (bw - 36) / 2, y: H - 3, "text-anchor": "middle"}, svg).textContent = "n = " + t.n;
+  });
+}
+thirds("thirdsA", rawPlace, v => v.toFixed(1) + "th", 6, 14, true);
+thirds("thirdsB", thB, pct, 0, 1, false);
+const okv = (id, res, what) => {
+  const v = document.getElementById(id), sig = res.obs < res.band[0] || res.obs > res.band[1];
+  v.className = "verdict " + (sig ? "ok" : "bad");
+  v.textContent = `${what}: r = ${fmt(res.obs)}, outside the chance band ${fmt(res.band[0])} to ${fmt(res.band[1])}? ${sig ? "yes" : "no"} (${pstr(res)})`;
+};
+okv("vA", resA, "position vs place-share");
+okv("vB", resB, "position vs qualified");
+
+/* ---------- render: control ---------- */
+(function(){
+  const svg = document.getElementById("ctrl"); svg.innerHTML = "";
+  const W = 960, L = 260, Rr = 20, lo = -0.25, hi = 0.25, x = v => L + (W - L - Rr) * (v - lo) / (hi - lo);
+  const rowsC = [
+    ["the result: finish", outAc, "var(--late)"],
+    ["the control: prior strength", resC, controlOk ? "var(--ok)" : "var(--warn)"]
+  ];
+  for (const g of [-0.2, -0.1, 0, 0.1, 0.2]){
+    el("line", {x1: x(g), x2: x(g), y1: 10, y2: 140, stroke: g === 0 ? "var(--ink3)" : "var(--rule2)"}, svg);
+    el("text", {x: x(g), y: 160, "text-anchor": "middle"}, svg).textContent = fmt(g, 1);
+  }
+  rowsC.forEach(([name, r, col], k) => {
+    const yy = 40 + k * 62;
+    el("text", {x: 0, y: yy + 4, style: "font-size:13px;fill:var(--ink2)"}, svg).textContent = name;
+    el("rect", {x: x(r.band[0]), width: x(r.band[1]) - x(r.band[0]), y: yy - 13, height: 26, fill: "var(--band)", rx: 3}, svg);
+    el("circle", {cx: x(r.obs), cy: yy, r: 7, fill: col}, svg);
+    el("text", {x: x(r.obs), y: yy - 18, "text-anchor": "middle", style: "font-weight:700;fill:var(--ink)"}, svg).textContent = "r = " + fmt(r.obs);
+  });
+  const v = document.getElementById("vC");
+  v.className = "verdict " + (controlOk ? "ok" : "bad");
+  v.textContent = controlOk
+    ? `Control holds: prior strength vs slot r = ${fmt(resC.obs)}, inside its chance band (${fmt(resC.band[0])} to ${fmt(resC.band[1])}), ${pstr(resC)}. ${resC.n} lottery-era finalists with at least two earlier finals.`
+    : `Control drifted: prior strength vs slot r = ${fmt(resC.obs)} is outside its chance band. The headline is withheld.`;
+  document.getElementById("adjNote").textContent =
+    `The control leans the same way as the result, though well inside chance. Holding prior strength fixed in a regression, the slot effect moves from ${fmt(bRaw)} to ${fmt(bAdj)} (share of the scoreboard per full night of running order), so at most ${Math.max(0, Math.round(100 * (1 - bAdj / bRaw)))}% of it could be that lean.`;
+})();
+
+/* ---------- render: wins by slot ---------- */
+const F = rows(i => R.show[i] === FINAL);
+const finals = groups(F);
+document.getElementById("nFinals").textContent = finals.length;
+const wins = new Array(28).fill(0), used = new Array(28).fill(0);
+for (const g of finals){ const n = R.n[g[0]]; for (let s = 1; s <= n; s++) used[s]++; }
+for (const i of F) if (R.place[i] === 1) wins[R.slot[i]]++;
+const maxSlot = Math.max(...F.map(i => R.n[i]));
+(function(){
+  const svg = document.getElementById("wins"); svg.innerHTML = "";
+  const W = 960, H = 250, L = 30, Rr = 6, T = 16, Bt = 34, bw = (W - L - Rr) / maxSlot, top = Math.max(...wins);
+  const y = v => T + (H - T - Bt) * (1 - v / top);
+  for (let g = 0; g <= top; g += 2){
+    el("line", {x1: L, x2: W - Rr, y1: y(g), y2: y(g), stroke: "var(--rule2)"}, svg);
+    el("text", {x: L - 6, y: y(g) + 4, "text-anchor": "end"}, svg).textContent = g;
+  }
+  const tip = document.getElementById("winTip");
+  for (let s = 1; s <= maxSlot; s++){
+    const x = L + (s - 1) * bw, w = wins[s];
+    /* red only where an empty record means something: slots used in 40+ finals */
+    const zero = w === 0 && used[s] >= 40, rare = used[s] < 40;
+    const col = zero ? "var(--warn)" : s > maxSlot * 2 / 3 ? "var(--late)" : s <= maxSlot / 3 ? "var(--early)" : "var(--ink3)";
+    if (w > 0) el("rect", {x: x + 3, width: bw - 6, y: y(w), height: y(0) - y(w), fill: col, rx: 1.5}, svg);
+    else el("text", {x: x + bw / 2, y: y(0) - 6, "text-anchor": "middle", style: "fill:var(--warn);font-weight:700"}, svg).textContent = "0";
+    if (rare && w === 0) el("text", {x: x + bw / 2, y: y(0) - 6, "text-anchor": "middle"}, svg).textContent = "·";
+    el("text", {x: x + bw / 2, y: H - 16, "text-anchor": "middle", style: zero ? "fill:var(--warn);font-weight:700" : ""}, svg).textContent = s;
+    const hit = el("rect", {x, y: T, width: bw, height: H - T - Bt + 20, fill: "transparent", tabindex: 0}, svg);
+    const say = () => tip.textContent = `slot ${s} · existed in ${used[s]} of ${finals.length} finals · ${w} winner${w === 1 ? "" : "s"}` + (used[s] ? ` · ${(100 * w / used[s]).toFixed(1)}% of its finals (a fair share would be about ${(100 * finals.reduce((a, g) => a + (R.n[g[0]] >= s ? 1 / R.n[g[0]] : 0), 0) / used[s]).toFixed(1)}%)` : "");
+    hit.addEventListener("pointerenter", say); hit.addEventListener("focus", say);
+  }
+  el("text", {x: L, y: H - 1}, svg).textContent = "running-order slot";
+})();
+
+/* ---------- rerun history ---------- */
+const sizes = finals.map(g => R.n[g[0]]);
+const regular = []; for (let s = 1; s <= maxSlot; s++) if (used[s] >= 40) regular.push(s);
+const winlessNow = regular.filter(s => wins[s] === 0);
+let mcSeed = 1;
+function rerun(B){
+  const rand = rng(1000 + mcSeed++);
+  let two = 0, any = 0, tot = 0, atLeastTwo = 0;
+  const w = new Int32Array(maxSlot + 1);
+  for (let b = 0; b < B; b++){
+    w.fill(0);
+    for (const n of sizes) w[1 + Math.floor(rand() * n)]++;
+    let z = 0; for (const s of regular) if (w[s] === 0) z++;
+    if (w[2] === 0) two++; if (z) any++; if (z >= 2) atLeastTwo++; tot += z;
+  }
+  return { two: two / B, any: any / B, two2: atLeastTwo / B, mean: tot / B, B };
+}
+function showMC(m){
+  document.getElementById("mcNums").innerHTML = [
+    [pct(m.two), "of histories leave slot two specifically without a winner"],
+    [pct(m.any), "leave at least one of the " + regular.length + " regular slots without a winner"],
+    [pct(m.two2), "leave two or more of them winless, as the real history did (slots " + winlessNow.join(" and ") + ")"],
+    [m.mean.toFixed(2), "winless regular slots in the average history"]
+  ].map(([v, d]) => `<div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+  document.getElementById("mcNote").textContent = `Based on ${m.B.toLocaleString("en")} histories. A curse named after the fact is a test of one slot chosen because it failed; the fair question is how often some slot fails. Rerunning with a late-slot advantage built in would make an early slot like two even more likely to go empty.`;
+}
+showMC(rerun(10000));
+document.getElementById("mcRun").addEventListener("click", e => {
+  e.target.disabled = true;
+  setTimeout(() => { showMC(rerun(10000)); e.target.disabled = false; }, 20);
+});
+
+/* ---------- regime table ---------- */
+(function(){
+  const t = document.getElementById("eraTable");
+  const eras = [["Drawn by lot", 0], ["Lot with exceptions", 1], ["Set by producers", 2]];
+  let h = "<tr><th>Running order</th><th>Years</th><th>Finals: songs</th><th>Finals: r</th><th>Semis: songs</th><th>Semis: first → last third qualified</th></tr>";
+  const yrs = ["1957–2006 (semis 2004–06)", "2007–2012", "2013–2025"];
+  eras.forEach(([name, e], k) => {
+    const fa = finalsOf(e, false), sa = semisOf([e], false);
+    const rf = corr(fa.map(sf), fa.map(pp));
+    const ts = byThird(sa, i => qual(i) ? 1 : 0);
+    h += `<tr><td>${name}</td><td>${yrs[k]}</td><td class="n">${fa.length}</td><td class="n">${fmt(rf)}</td><td class="n">${sa.length}</td><td class="n">${pct(ts[0].mean)} → ${pct(ts[2].mean)}</td></tr>`;
+  });
+  const au = rows(i => R.show[i] === PREQUAL);
+  const ta = byThird(au, i => qual(i) ? 1 : 0);
+  h += `<tr><td>1996 audio round</td><td>tapes only</td><td class="n">–</td><td class="n">–</td><td class="n">${au.length}</td><td class="n">${pct(ta[0].mean)} → ${pct(ta[2].mean)}</td></tr>`;
+  t.innerHTML = h;
+  document.getElementById("audioNote").textContent = `Its qualification rate runs ${pct(ta[0].mean)} for the first third and ${pct(ta[2].mean)} for the last; it is shown in the regime table for completeness`;
+})();
+</script>
+</body>
+</html>
